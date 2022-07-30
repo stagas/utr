@@ -1,5 +1,5 @@
 import type { MatcherFunction } from 'expect'
-import pretty from 'pretty-format2'
+import * as pretty from 'pretty-format2'
 
 import type { Task } from './runner'
 
