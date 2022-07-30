@@ -1,5 +1,5 @@
 <h1>
-utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.1-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-833-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.2-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-833-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
@@ -38,6 +38,7 @@ Universal test runner.
 - [istanbul-lib-coverage](https://npmjs.org/package/istanbul-lib-coverage) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; Data library for istanbul coverage objects
 - [istanbul-lib-report](https://npmjs.org/package/istanbul-lib-report) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; Base reporting library for istanbul
 - [istanbul-reports](https://npmjs.org/package/istanbul-reports) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; istanbul reports
+- [jest-browser-globals](https://npmjs.org/package/jest-browser-globals) by [arshaw](https://github.com/arshaw) &ndash; undefined
 - [jest-diff](https://npmjs.org/package/jest-diff) by [facebook](https://github.com/facebook) &ndash; undefined
 - [jsdom](https://npmjs.org/package/jsdom) by [jsdom](https://github.com/jsdom) &ndash; A JavaScript implementation of many web standards
 - [pirates](https://npmjs.org/package/pirates) by [Ari Porad](http://ariporad.com) &ndash; Properly hijack require
