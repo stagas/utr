@@ -19,11 +19,11 @@ export const printCoverage = async (v8Coverage: Profiler.ScriptCoverage[], root 
       && !x.url.includes('node_modules')
     )
   ) {
-    const url = new URL(entry.url)
+    const url = new URL(entry.url.replace('?import', ''))
     const pathname = url.pathname
     if (url.protocol.startsWith('http')) {
       log('fetching sourcemap:', entry.url)
-      const sources = await fetchSourceMap(entry.url)
+      const sources = await fetchSourceMap(entry.url.replace('?import', ''))
       // log('sources', sources)
       if (!sources?.sourceMap?.sourcemap) continue
 

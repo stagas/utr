@@ -151,6 +151,7 @@ export const consoleFilter = (args: any[]) =>
           ])
         )
         .join('\n')
+        .replaceAll('?import', '')
 
       const urls = parseUrls(cleanStack)
       for (const url of urls) {

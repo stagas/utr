@@ -46,6 +46,7 @@ export const run = async (options: Options) => {
         runner: await resolve('./runner.js'),
         expect: await resolve('@storybook/expect'),
         globals: await resolve('jest-browser-globals'),
+        'everyday-utils': await resolve('everyday-utils'),
         snapshot: await resolve('./snapshot.js'),
       },
     },
