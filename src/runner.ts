@@ -82,7 +82,7 @@ g.xit = it.skip
 g.fdescribe = describe.only
 g.xdescribe = describe.skip
 
-const stack: { task?: Task; schedule: Task[] }[] = [{ schedule: [] }]
+let stack: { task?: Task; schedule: Task[] }[] = [{ schedule: [] }]
 
 const current = {
   filename: '',
@@ -196,6 +196,8 @@ g.runTests = async (filename: string, { testNamePattern }: TestRunnerOptions) =>
       }
     }
   }
+
+  stack = [{ schedule: [] }]
 
   return results
 }

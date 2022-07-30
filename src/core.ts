@@ -144,6 +144,7 @@ export const consoleFilter = (args: any[]) =>
             'runTest',
             'pptr:',
             'node:',
+            'asyncSerialReduce',
             '/register',
             '/runner',
             '/expect/',

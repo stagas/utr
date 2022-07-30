@@ -10,7 +10,9 @@ global.Event = window.Event
 global.EventTarget = window.EventTarget
 
 import { decarg } from 'decarg'
+import { asyncSerialReduce } from 'everyday-utils'
 import * as fs from 'fs/promises'
+import * as path from 'path'
 import { Options } from './cli'
 import {
   consoleFilter,
@@ -35,7 +37,8 @@ for (const m of ['debug', 'error', 'warn']) {
 
 global.getStackCodeFrame = getStackCodeFrame
 
-const options = decarg(new Options(), process.argv)!
+const argv = process.argv.filter(x => !x.endsWith(__filename) && !x.endsWith('bin/utr'))
+const options = decarg(new Options(), argv)!
 
 expect.extend(options.updateSnapshots ? snapshotMatcherUpdater : snapshotMatcher)
 
@@ -47,13 +50,17 @@ queueMicrotask(async () => {
     filename => fs.readFile(filename, 'utf-8')
   )
 
-  global.runTests(options.files[0], options).then(async (testResults: TestResult[]) => {
-    const { hasErrors, shouldUpdateSnapshots } = testReport(testResults)
+  const testResults = await asyncSerialReduce(options.files, async (allResults, filename) => {
+    require(path.join(process.cwd(), filename))
+    const testResults: TestResult[] = await global.runTests(filename, options)
+    return allResults.concat(testResults)
+  }, [] as TestResult[])
 
-    testEnd('no', hasErrors)
+  const { hasErrors, shouldUpdateSnapshots } = testReport(testResults)
 
-    process.exitCode = shouldUpdateSnapshots ? 2 : hasErrors ? 1 : 0
+  process.exitCode = shouldUpdateSnapshots ? 2 : hasErrors ? 1 : 0
 
-    if (options.updateSnapshots) await updateSnapshots('no', testResults)
-  })
+  testEnd('no', hasErrors)
+
+  if (options.updateSnapshots) await updateSnapshots('no', testResults)
 })

@@ -68,25 +68,30 @@ export const run = async (options: Options) => {
     <script type="module" src="setup.js"></script>
   </body>
 </html>`
-
   const makeVirtual = async () => `
     import 'runner'
     import 'globals'
     import expect from 'expect'
+    import { asyncSerialReduce } from 'everyday-utils'
     import { snapshotMatcher, snapshotMatcherUpdater, fetchSnapshots } from 'snapshot'
 
     window.expect = expect
 
     expect.extend(${options.updateSnapshots ? 'snapshotMatcherUpdater' : 'snapshotMatcher'})
 
-    ${options.files.map(x => `import '/@fs${root}/${x}'`).join('\n')}
-
     window.resultsPromise = new Promise(async resolve => {
       window.snapshots = await fetchSnapshots(${JSON.stringify(await filterFilesWithSnapshots(options.files))},
         filename => fetch(filename).then(res => res.text()))
-      resolve(await runTests(${JSON.stringify(options.files[0])}, {
-        testNamePattern: ${JSON.stringify(options.testNamePattern)},
-      }))
+
+      resolve(await asyncSerialReduce(${JSON.stringify(options.files)}, async (allResults, filename) => {
+        await import(/* @vite-ignore */ '/@fs${root}/' + filename)
+
+        const testResults = await window.runTests(filename, {
+          testNamePattern: ${JSON.stringify(options.testNamePattern)},
+        })
+
+        return allResults.concat(testResults)
+      }, []))
     })
   `
 
