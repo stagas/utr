@@ -124,7 +124,7 @@
     "@swc-node/register": "1.5.1",
     "@swc-node/sourcemap-support": "0.2.0",
     "@swc/register": "0.1.10",
-    "apply-sourcemaps": "0.0.2",
+    "apply-sourcemaps": "0.0.3",
     "cross-spawn": "7.0.3",
     "debug": "4.3.4",
     "decarg": "1.2.1",
@@ -143,7 +143,7 @@
     "jsdom": "20.0.0",
     "pirates": "4.0.5",
     "pretty-format2": "2.0.4",
-    "run-in-vite": "0.0.1",
+    "run-in-vite": "0.0.2",
     "source-map-support": "0.5.21",
     "v8-to-istanbul": "9.0.1"
   }
