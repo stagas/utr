@@ -1,5 +1,5 @@
 <h1>
-utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.0.1-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-811-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.0-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-833-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
@@ -36,6 +36,7 @@ Universal test runner.
 - [everyday-node](https://npmjs.org/package/everyday-node) by [stagas](https://github.com/stagas) &ndash; Everyday node utilities.
 - [everyday-utils](https://npmjs.org/package/everyday-utils) by [stagas](https://github.com/stagas) &ndash; Everyday utilities
 - [expect](https://npmjs.org/package/expect) by [facebook](https://github.com/facebook) &ndash; undefined
+- [glob](https://npmjs.org/package/glob) by [Isaac Z. Schlueter](http://blog.izs.me/) &ndash; a little globber
 - [global-jsdom](https://npmjs.org/package/global-jsdom) by [jonathan schatz](https://github.com/github.com) &ndash; Enable DOM in Node.js
 - [import-meta-resolve](https://npmjs.org/package/import-meta-resolve) by [Titus Wormer](https://wooorm.com) &ndash; Resolve things like Node.js — ponyfill for `import.meta.resolve`
 - [istanbul-lib-coverage](https://npmjs.org/package/istanbul-lib-coverage) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; Data library for istanbul coverage objects
