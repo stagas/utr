@@ -1,0 +1,14 @@
+
+exports[`add(a, b) snapshot 1`] = `
+Object {
+  "foo": "bawqwr!",
+  "hello": "world",
+}
+`;
+
+exports[`add(a, b) snapshot 2`] = `
+Object {
+  "foo": "barzwewe",
+  "hello": "wt?!!",
+}
+`;
