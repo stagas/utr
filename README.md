@@ -1,5 +1,5 @@
 <h1>
-utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.3-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-833-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.4-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-2,467-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
@@ -42,7 +42,6 @@ Universal test runner.
 - [jest-diff](https://npmjs.org/package/jest-diff) by [facebook](https://github.com/facebook) &ndash; undefined
 - [jsdom](https://npmjs.org/package/jsdom) by [jsdom](https://github.com/jsdom) &ndash; A JavaScript implementation of many web standards
 - [pirates](https://npmjs.org/package/pirates) by [Ari Porad](http://ariporad.com) &ndash; Properly hijack require
-- [pretty-format2](https://npmjs.org/package/pretty-format2) by [James Kyle](https://github.com/thejameskyle) &ndash; Stringify any value. Better, faster, prettier.
 - [run-in-vite](https://npmjs.org/package/run-in-vite) by [stagas](https://github.com/stagas) &ndash; runs a single function in vite using puppeteer
 - [source-map-support](https://npmjs.org/package/source-map-support) by [evanw](https://github.com/evanw) &ndash; Fixes stack traces for files with source maps
 - [v8-to-istanbul](https://npmjs.org/package/v8-to-istanbul) by [Ben Coe](https://github.com/istanbuljs) &ndash; convert from v8 coverage format to istanbul's format
