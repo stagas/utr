@@ -1,5 +1,5 @@
 <h1>
-utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.0-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-833-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.1-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-833-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
@@ -21,12 +21,8 @@ Universal test runner.
 ## Credits
 
 - [@stagas/chalk](https://npmjs.org/package/@stagas/chalk) by [stagas](https://github.com/stagas) &ndash; Terminal string styling done right (+ CommonJS build)
-- [@stdlib/utils-escape-regexp-string](https://npmjs.org/package/@stdlib/utils-escape-regexp-string) by [The Stdlib Authors](https://github.com/graphs) &ndash; Escape a regular expression string or pattern.
 - [@storybook/expect](https://npmjs.org/package/@storybook/expect) by [storybookjs](https://github.com/storybookjs) &ndash; Browser-compatible version of Jest's `expect`
 - [@swc-node/core](https://npmjs.org/package/@swc-node/core) by [LongYinan](https://github.com/swc-project) &ndash; Faster swc nodejs binding
-- [@swc-node/register](https://npmjs.org/package/@swc-node/register) by [LongYinan](https://github.com/swc-project) &ndash; SWC node register
-- [@swc-node/sourcemap-support](https://npmjs.org/package/@swc-node/sourcemap-support) by [LongYinan](https://github.com/swc-project) &ndash; Runtime sourcemap support in NodeJS
-- [@swc/register](https://npmjs.org/package/@swc/register) by [강동윤](https://github.com/swc-project) &ndash; Super fast alternative for babel-register
 - [apply-sourcemaps](https://npmjs.org/package/apply-sourcemaps) by [stagas](https://github.com/stagas) &ndash; Fetch and apply sourcemaps in logs and stack traces originating from the browser or puppeteer.
 - [cross-spawn](https://npmjs.org/package/cross-spawn) by [André Cruz](https://github.com/moxystudio) &ndash; Cross platform child_process#spawn and child_process#spawnSync
 - [debug](https://npmjs.org/package/debug) by [Josh Junon](https://github.com/debug-js) &ndash; Lightweight debugging utility for Node.js and the browser
