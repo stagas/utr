@@ -1,3 +1,5 @@
+import type { StringOf, ValuesOf } from 'everyday-types'
+
 declare const window: Window & typeof globalThis & any
 
 const g = typeof global === 'object' ? global : typeof window === 'object' ? window : globalThis
@@ -16,11 +18,13 @@ export interface Task {
   isGroup: boolean
   isOnly: boolean
   isSkip: boolean
+  isHook: boolean
 
   filename: string
   ownName: string
   namespace: string[]
   title: string
+  timeout: number
   fn: () => Promise<void>
 
   snapshots: string[]
@@ -54,10 +58,12 @@ const executer = (isGroup = false, isOnly = false, isSkip = false) =>
       isGroup,
       isOnly,
       isSkip,
+      isHook: false,
       ownName,
       namespace,
       title,
       fn,
+      timeout: -1,
       snapshots: [],
       didError,
       didNotError,
@@ -82,7 +88,20 @@ g.xit = it.skip
 g.fdescribe = describe.only
 g.xdescribe = describe.skip
 
-let stack: { task?: Task; schedule: Task[] }[] = [{ schedule: [] }]
+const hooks = ['beforeAll', 'afterAll', 'beforeEach', 'afterEach'] as const
+for (const hook of hooks) {
+  g[hook] = (fn: () => Promise<void>, timeout = -1) => {
+    current.schedule![hook] = { fn, timeout, isHook: true } as Task
+  }
+}
+
+type Schedule =
+  & Task[]
+  & {
+    [key in StringOf<ValuesOf<typeof hooks>>]?: Task
+  }
+
+let stack: { task?: Task; schedule: Schedule }[] = [{ schedule: [] }]
 
 const current = {
   filename: '',
@@ -113,26 +132,40 @@ g.runTests = async (filename: string, { testNamePattern }: TestRunnerOptions) =>
 
   const results: TestResult[] = []
 
-  const queue: { task: Task; isOnly: boolean; isSkip: boolean }[] = []
+  const queue: { task?: Task; isOnly: boolean; isSkip: boolean }[] = []
 
-  const createQueue = (schedule: Task[]) => {
+  const push = (task: () => Task | undefined) =>
+    queue.push({
+      get task() {
+        return task()
+      },
+      isOnly: current.isOnly,
+      isSkip: current.isSkip,
+    })
+
+  const createQueue = (schedule: Schedule) => {
+    push(() => schedule.beforeAll)
+
     for (const task of schedule) {
       stack.push({ task, schedule: [] })
 
+      push(() => schedule.beforeEach)
+
       if (task.isGroup || !testNamePattern.length || task.namespace.join(' ').match(new RegExp(testNamePattern))) {
-        queue.push({
-          task,
-          isOnly: current.isOnly,
-          isSkip: current.isSkip,
-        })
+        push(() => task)
       }
 
       if (task.isGroup) {
         task.fn()
         createQueue(current.schedule)
       }
+
+      push(() => schedule.afterEach)
+
       stack.pop()
     }
+
+    push(() => schedule.afterAll)
   }
 
   createQueue(current.schedule)
@@ -144,9 +177,13 @@ g.runTests = async (filename: string, { testNamePattern }: TestRunnerOptions) =>
   }
 
   for (const { task, isSkip } of queue) {
-    if (task.isGroup) {
+    if (task?.isGroup) {
       results.push({ task })
-    } else {
+    } else if (task?.isHook) {
+      if (!isSkip) {
+        await task.fn?.()
+      }
+    } else if (task) {
       if (isSkip) {
         console.debug(task.didSkipError.stack)
         results.push({

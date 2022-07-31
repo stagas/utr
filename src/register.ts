@@ -51,7 +51,7 @@ queueMicrotask(async () => {
   )
 
   const testResults = await asyncSerialReduce(options.files, async (allResults, filename) => {
-    require(path.join(process.cwd(), filename))
+    require(filename.startsWith('/') ? filename : path.join(process.cwd(), filename))
     const testResults: TestResult[] = await global.runTests(filename, options)
     return allResults.concat(testResults)
   }, [] as TestResult[])

@@ -80,19 +80,23 @@ export const run = async (options: Options) => {
 
     expect.extend(${options.updateSnapshots ? 'snapshotMatcherUpdater' : 'snapshotMatcher'})
 
-    window.resultsPromise = new Promise(async resolve => {
-      window.snapshots = await fetchSnapshots(${JSON.stringify(await filterFilesWithSnapshots(options.files))},
-        filename => fetch(filename).then(res => res.text()))
+    window.resultsPromise = new Promise(resolve => {
+      ;(async () => {
+        window.snapshots = await fetchSnapshots(${JSON.stringify(await filterFilesWithSnapshots(options.files))},
+          filename => fetch(filename).then(res => res.text()))
 
-      resolve(await asyncSerialReduce(${JSON.stringify(options.files)}, async (allResults, filename) => {
-        await import(/* @vite-ignore */ '/@fs${root}/' + filename)
+        const testResults = await asyncSerialReduce(${JSON.stringify(options.files)}, async (allResults, filename) => {
+          await import(/* @vite-ignore */ '/@fs${root}/' + filename)
 
-        const testResults = await window.runTests(filename, {
-          testNamePattern: ${JSON.stringify(options.testNamePattern)},
-        })
+          const testResults = await window.runTests(filename, {
+            testNamePattern: ${JSON.stringify(options.testNamePattern)},
+          })
 
-        return allResults.concat(testResults)
-      }, []))
+          return allResults.concat(testResults)
+        }, [])
+
+        resolve(testResults)
+      })();
     })
   `
 
