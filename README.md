@@ -1,5 +1,5 @@
 <h1>
-utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.1.4-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-2,467-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v0.2.0-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-2,498-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
@@ -30,6 +30,7 @@ Universal test runner.
 - [each-dep](https://npmjs.org/package/each-dep) by [stagas](https://github.com/stagas) &ndash; Async iterator walk of a file's dependencies.
 - [event-toolkit](https://npmjs.org/package/event-toolkit) by [stagas](https://github.com/stagas) &ndash; Toolkit for DOM events.
 - [everyday-node](https://npmjs.org/package/everyday-node) by [stagas](https://github.com/stagas) &ndash; Everyday node utilities.
+- [everyday-types](https://npmjs.org/package/everyday-types) by [stagas](https://github.com/stagas) &ndash; Everyday utility types
 - [everyday-utils](https://npmjs.org/package/everyday-utils) by [stagas](https://github.com/stagas) &ndash; Everyday utilities
 - [expect](https://npmjs.org/package/expect) by [facebook](https://github.com/facebook) &ndash; undefined
 - [glob](https://npmjs.org/package/glob) by [Isaac Z. Schlueter](http://blog.izs.me/) &ndash; a little globber
