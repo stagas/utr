@@ -69,7 +69,7 @@ if (require.main === module) {
 
       const status = spawnSync(
         cmd[0],
-        [...cmd.slice(1), '-r', swc, '--input-type', 'module', patch, ...argv],
+        [...cmd.slice(1), '-r', swc, patch, ...argv],
         { stdio: 'inherit' }
       ).status!
 

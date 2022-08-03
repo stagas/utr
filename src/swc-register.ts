@@ -4,7 +4,7 @@ import { transformSync } from '@swc-node/core'
 import { addHook } from 'pirates'
 import sourceMapSupport from 'source-map-support'
 
-const DEFAULT_EXTENSIONS = ['.jsx', '.ts', '.tsx']
+const DEFAULT_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx']
 // const DEFAULT_EXTENSIONS = ['.js', '.jsx', '.es6', '.es', '.mjs', '.ts', '.tsx']
 
 const config = JSON.parse(fs.readFileSync('.swcrc', 'utf-8'))
