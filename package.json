@@ -83,7 +83,7 @@
     "swcno": "0.1.1",
     "typescript": "4.7.3",
     "utr": "^0.2.0",
-    "vite-open": "^3.0.2"
+    "vite-open": "^3.1.0"
   },
   "dependencies": {
     "@stagas/chalk": "5.0.1",
@@ -109,7 +109,7 @@
     "jest-diff": "28.1.1",
     "jsdom": "20.0.0",
     "pirates": "4.0.5",
-    "run-in-vite": "^0.0.2",
+    "run-in-vite": "^1.0.0",
     "source-map-support": "0.5.21",
     "v8-to-istanbul": "9.0.1"
   }
