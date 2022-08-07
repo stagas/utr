@@ -2,6 +2,7 @@
 
 const swc = require.resolve('./swc-register')
 const patch = require.resolve('./register')
+const jsdom = require.resolve('global-jsdom/register')
 
 import { arg, decarg } from 'decarg'
 import * as path from 'path'
@@ -13,6 +14,7 @@ export class Options {
   @arg('-t', '--testNamePattern', 'Run only tests with a name that matches the regex pattern.') testNamePattern = ''
   @arg('-w', '--watch', 'Watch for changes.') watch = false
   @arg('-u', '--update-snapshots', 'Update snapshots.') updateSnapshots = false
+  @arg('-j', '--jsdom', 'Run in jsdom.') jsdom = false
   @arg('-b', '--browser', 'Run in the browser.') browser = false
   @arg('-c', '--coverage', 'Produce coverage report.') coverage = false
   @arg('--runInBand', 'Run all tests serially in the current process.') runInBand = false
@@ -69,7 +71,7 @@ if (require.main === module) {
 
       const status = spawnSync(
         cmd[0],
-        [...cmd.slice(1), '-r', swc, patch, ...argv],
+        [...cmd.slice(1), '-r', swc, ...(options.jsdom ? ['-r', jsdom] : []), patch, ...argv],
         { stdio: 'inherit' }
       ).status!
 

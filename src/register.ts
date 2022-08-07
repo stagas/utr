@@ -1,13 +1,14 @@
 declare const global: any
 
-import 'global-jsdom/register'
 import './runner'
 import expect from 'expect'
 global.expect = expect
 
-// override because node overwrites them
-global.Event = window.Event
-global.EventTarget = window.EventTarget
+if (typeof window !== 'undefined') {
+  // override because node overwrites them
+  global.Event = window.Event
+  global.EventTarget = window.EventTarget
+}
 
 import { decarg } from 'decarg'
 import { asyncSerialReduce } from 'everyday-utils'
