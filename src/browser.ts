@@ -23,7 +23,9 @@ export const run = async (options: Options) => {
 
   const resolve = async (x: string) =>
     // @ts-ignore
-    (await importMetaResolve(x, import.meta.url.replace('cjs', 'esm'))).split('file://').pop()
+    (await importMetaResolve(x, import.meta.url.replace('cjs', 'esm'), void 0, true)).replace('cjs', 'esm').split(
+      'file://'
+    ).pop()
 
   const setup: Partial<ClientSetup> = {}
   const root = process.cwd()
