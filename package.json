@@ -3,7 +3,7 @@
   "author": "stagas",
   "short": "stagas/utr",
   "description": "Universal test runner.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "MIT",
   "repository": {
     "type": "git",
