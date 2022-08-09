@@ -140,7 +140,7 @@ export const consoleFilter = (args: any[]) =>
         .split('\n')
         .filter(x =>
           !includesAny(x, [
-            '@id/virtual:setup',
+            'entry',
             'runTest',
             'pptr:',
             'node:',

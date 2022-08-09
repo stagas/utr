@@ -1,5 +1,6 @@
 import chalk from '@stagas/chalk'
-import { ClientSetup, runInVite, updateVirtualModule, virtualPlugin } from 'run-in-vite'
+import * as path from 'path'
+import { puppito, PuppitoOptions } from 'puppito'
 
 import { Options } from './cli'
 import {
@@ -18,59 +19,25 @@ import type { TestResult } from './runner'
 
 declare const window: { resultsPromise: Promise<TestResult[]> }
 
-export const run = async (options: Options) => {
+export const run = async (runOptions: Options) => {
+  const root = process.cwd()
   const { resolve: importMetaResolve } = await eval('import(\'import-meta-resolve\')')
-
   const resolve = async (x: string) =>
     // @ts-ignore
     (await importMetaResolve(x, import.meta.url.replace('cjs', 'esm'), void 0, true)).replace('cjs', 'esm').split(
       'file://'
     ).pop()
 
-  const setup: Partial<ClientSetup> = {}
-  const root = process.cwd()
-  setup.root = root
-  setup.quiet = !options.watch
-  setup.watch = options.watch
-  setup.noForce = true
+  const options = new PuppitoOptions()
 
-  setup.responses = {
-    '/setup.js': {
-      content: `
-      import '/@id/virtual:setup'
-    `,
-    },
+  options.alias = {
+    runner: await resolve('./runner.js'),
+    expect: await resolve('@storybook/expect'),
+    globals: await resolve('jest-browser-globals'),
+    'everyday-utils': await resolve('everyday-utils'),
+    snapshot: await resolve('./snapshot.js'),
   }
 
-  setup.viteOptions = {
-    resolve: {
-      alias: {
-        runner: await resolve('./runner.js'),
-        expect: await resolve('@storybook/expect'),
-        globals: await resolve('jest-browser-globals'),
-        'everyday-utils': await resolve('everyday-utils'),
-        snapshot: await resolve('./snapshot.js'),
-      },
-    },
-  }
-
-  setup.html = /*html*/ `\
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='47.2' r='34'%0Afill='transparent' stroke='%23fff' stroke-width='7.5' /%3E%3C/svg%3E"
-      type="image/svg+xml"
-    />
-    <title>Test</title>
-  </head>
-  <body style="background:#222">
-    <script type="module" src="setup.js"></script>
-  </body>
-</html>`
   const makeVirtual = async () => `
     import 'runner'
     import 'globals'
@@ -80,18 +47,20 @@ export const run = async (options: Options) => {
 
     window.expect = expect
 
-    expect.extend(${options.updateSnapshots ? 'snapshotMatcherUpdater' : 'snapshotMatcher'})
+    expect.extend(${runOptions.updateSnapshots ? 'snapshotMatcherUpdater' : 'snapshotMatcher'})
 
     window.resultsPromise = new Promise(resolve => {
       ;(async () => {
-        window.snapshots = await fetchSnapshots(${JSON.stringify(await filterFilesWithSnapshots(options.files))},
+        window.snapshots = await fetchSnapshots(${JSON.stringify(await filterFilesWithSnapshots(runOptions.files))},
           filename => fetch(filename).then(res => res.text()))
 
-        const testResults = await asyncSerialReduce(${JSON.stringify(options.files)}, async (allResults, filename) => {
-          await import(/* @vite-ignore */ '/@fs${root}/' + filename)
+        const testResults = await asyncSerialReduce(${
+    JSON.stringify(runOptions.files)
+  }, async (allResults, filename) => {
+          await import(/* ignore */ '/@fs${root}/' + filename)
 
           const testResults = await window.runTests(filename, {
-            testNamePattern: ${JSON.stringify(options.testNamePattern)},
+            testNamePattern: ${JSON.stringify(runOptions.testNamePattern)},
           })
 
           return allResults.concat(testResults)
@@ -102,36 +71,39 @@ export const run = async (options: Options) => {
     })
   `
 
-  setup.virtual = {
-    'virtual:setup': await makeVirtual(),
-  }
+  options.file = '/entry.js'
+  options.entrySource = await makeVirtual()
+  options.consoleFilter = consoleFilter
+  options.quiet = true
 
-  setup.consoleFilter = consoleFilter
-
-  if (options.debug) {
+  if (runOptions.debug) {
     console.error(chalk.yellow.bold('[[[ debugging active @ port 9222 ]]]'))
-    setup.launchOptions = {
-      debuggingPort: 9222,
-    }
+    options.puppeteer.debuggingPort = 9222
   }
 
-  const instance = await runInVite(setup)
+  const instance = await puppito(options)
   const { server, page, flush, close } = instance
+
+  for (const file of runOptions.files) {
+    const target = path.join(root, file)
+    await server.analyze(target)
+  }
+  server.updateCache()
 
   page.exposeFunction('getStackCodeFrame', getStackCodeFrame)
 
   page.on('framenavigated', () => {
     testBegin('bro')
-    if (options.coverage) page.coverage.startJSCoverage()
+    if (runOptions.coverage) page.coverage.startJSCoverage()
   })
 
-  page.goto(server.networkAddr)
+  page.goto(server.url)
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     await page.waitForNavigation({
       waitUntil: 'domcontentloaded',
-      timeout: options.watch || options.debug ? 0 : 30 * 1000,
+      timeout: runOptions.watch || runOptions.debug ? 0 : 30 * 1000,
     })
 
     const testResults = await page.evaluate(async () => {
@@ -144,7 +116,7 @@ export const run = async (options: Options) => {
 
     testEnd('bro', hasErrors)
 
-    if (options.coverage) {
+    if (runOptions.coverage) {
       log('retrieving coverage')
 
       // ripped from: https://github.com/modernweb-dev/web/blob/3f671e732201f141d910b59c60666f31df9c6126/packages/test-runner-chrome/src/ChromeLauncherPage.ts#L86
@@ -156,18 +128,18 @@ export const run = async (options: Options) => {
       await printCoverage(v8Coverage, root)
     }
 
-    if (options.updateSnapshots) {
+    if (runOptions.updateSnapshots) {
       await updateSnapshots('bro', testResults)
-      options.updateSnapshots = false
+      runOptions.updateSnapshots = false
     }
 
-    if (options.watch) {
-      waitForAction('bro', { watchFiles: false, shouldUpdateSnapshots }, options, async newOptions => {
-        if (!virtualPlugin) throw new Error('Virtual plugin not found.')
+    if (runOptions.watch) {
+      waitForAction('bro', { watchFiles: false, shouldUpdateSnapshots }, runOptions, async newOptions => {
         Object.assign(options, newOptions)
-        updateVirtualModule(virtualPlugin, 'virtual:setup', await makeVirtual())
+        await server.analyze(options.file, await makeVirtual())
+        server.updateCache('/', true)
       })
-    } else if (!options.debug) {
+    } else if (!runOptions.debug) {
       await close()
       process.exit(+hasErrors)
       break
