@@ -16,6 +16,13 @@ Universal test runner.
 </td></tr></table>
 </h4>
 
+## CLI
+
+<p></p>
+<p>
+<img width="731.4285714285713" src="cli.png" />
+</p>
+
 ## API
 
 ## Credits
