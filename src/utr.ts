@@ -77,7 +77,7 @@ export const main = async (options: Options) => {
 
     const status = spawnSync(
       cmd[0],
-      [...cmd.slice(1), '-r', swc, ...(options.jsdom ? ['-r', jsdom] : []), patch, ...argv],
+      [...cmd.slice(1), '-r', swc, ...(options.jsdom ? ['-r', jsdom] : []), patch, ...options.files],
       { stdio: 'inherit' }
     ).status!
 
