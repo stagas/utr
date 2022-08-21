@@ -8,15 +8,15 @@ import { discoverFiles, main } from './utr'
 export class Options {
   @arg('<files>', 'Files or patterns to test') files: string[] = []
 
-  @arg('-t', '--testNamePattern', 'Run only tests with a name that matches the regex pattern.') testNamePattern = ''
   @arg('-w', '--watch', 'Watch for changes.') watch = false
-  @arg('-u', '--update-snapshots', 'Update snapshots.') updateSnapshots = false
+  @arg('-t', '--testNamePattern', 'Run only tests with a name that matches the regex pattern.') testNamePattern = ''
+  @arg('-u', '--updateSnapshots', 'Update snapshots.') updateSnapshots = false
+  @arg('-n', '--no', 'Run in node.') node = false
   @arg('-j', '--jsdom', 'Run in jsdom.') jsdom = false
   @arg('-b', '--bro', 'Run in the browser.') browser = false
-  @arg('-n', '--no', 'Run in node.') node = false
   @arg('-a', '--auto', 'Automatic environment.') auto = false
   @arg('-c', '--coverage', 'Produce coverage report.') coverage = false
-  @arg('-p', '--pass-all', 'Pass all environments') passAll = false
+  @arg('-p', '--passAll', 'Pass all environments') passAll = false
   @arg('--homedir', 'Homedir') homedir = '~'
   @arg('--headless', 'Run browser headless') headless = true
   @arg('--runInBand', 'Run all tests serially in the current process.') runInBand = false
