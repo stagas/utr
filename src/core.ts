@@ -154,7 +154,7 @@ export function transformArgsSync(args: any[], originUrl?: string) {
             'pptr:',
             'node:',
             'asyncSerialReduce',
-            '/utr/',
+            '/utr',
             '/register',
             '/runner',
             '/expect',
