@@ -9,7 +9,7 @@ import { log } from './core'
 
 import type { Profiler } from 'inspector'
 
-export const printCoverage = async (v8Coverage: Profiler.ScriptCoverage[], root = process.cwd()) => {
+export async function printCoverage(v8Coverage: Profiler.ScriptCoverage[], root = process.cwd()) {
   const coverageMap = libCoverage.createCoverageMap()
 
   // https://github.com/modernweb-dev/web/blob/3f671e732201f141d910b59c60666f31df9c6126/packages/test-runner-coverage-v8/src/index.ts#L47
@@ -25,16 +25,18 @@ export const printCoverage = async (v8Coverage: Profiler.ScriptCoverage[], root 
       log('fetching sourcemap:', entry.url)
       const sources = await fetchSourceMap(entry.url.replace('?import', ''))
       // log('sources', sources)
-      if (!sources?.sourceMap?.sourcemap) continue
+      if (!sources?.sourceMap?.sourcemap)
+        continue
 
       let filepath: string
-      if (pathname.startsWith('/@fs')) {
-        filepath = pathname.replace('/@fs', '')
+      if (pathname.startsWith('/~')) {
+        filepath = pathname.replace('/~', '')
       } else {
         filepath = path.join(root, pathname.slice(1))
       }
       log('resolved sourcemap path', filepath)
-      if (!filepath.startsWith(root)) continue
+      if (!filepath.startsWith(root))
+        continue
 
       const converter = v8ToIstanbul(filepath, 0, sources)
       log('converter loading')

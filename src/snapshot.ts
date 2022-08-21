@@ -10,16 +10,25 @@ export type Snapshots = {
   [k: string]: string
 } & { $locations?: Record<string, { line: number; column: number }> }
 
-const dirname = (x: string) => x.split('/').slice(0, -1).join('/') ?? x
-const basename = (x: string) => x.split('/').pop() ?? x
-export const filenameToSnap = (filename: string) => {
+function dirname(x: string) {
+  return x.split('/').slice(0, -1).join('/') ?? x
+}
+
+function basename(x: string) {
+  return x.split('/').pop() ?? x
+}
+
+export function filenameToSnap(filename: string) {
   const snap = `${dirname(filename)}/__snapshots__/${basename(filename)}.snap`
   return filename[0] === '/' && snap[0] !== '/' ? '/' + snap : snap
 }
-const isMultiline = (x: string) => x.includes('\n')
 
-const toMatchSnapshot = (withUpdate: boolean): MatcherFunction =>
-  function(received: any) {
+function isMultiline(x: string) {
+  return x.includes('\n')
+}
+
+function toMatchSnapshot(withUpdate: boolean): MatcherFunction {
+  return function(received: any) {
     const serialized = pretty(received)
     const actual = isMultiline(serialized) ? `\n${serialized}\n` : serialized
     current.task.snapshots.push(actual)
@@ -64,8 +73,9 @@ const toMatchSnapshot = (withUpdate: boolean): MatcherFunction =>
       },
     }
   }
+}
 
-export const fetchSnapshots = async (files: string[], fetchFn: (filename: string) => Promise<string>) => {
+export async function fetchSnapshots(files: string[], fetchFn: (filename: string) => Promise<string>) {
   const sources = await Promise.allSettled(
     files.map(async filename => ({
       filename,

@@ -4,6 +4,19 @@ declare const window: Window & typeof globalThis & any
 
 const g = typeof global === 'object' ? global : typeof window === 'object' ? window : globalThis
 
+g.defaultTimeout = 3000
+if (g.jest) {
+  g.jest.setTimeout = (ms: number) => {
+    g.defaultTimeout = ms
+  }
+} else {
+  g.jest = {
+    setTimeout(ms: number) {
+      g.defaultTimeout = ms
+    },
+  }
+}
+
 export interface TestRunnerOptions {
   testNamePattern: string
 }
@@ -70,6 +83,27 @@ const executer = (isGroup = false, isOnly = false, isSkip = false) =>
       didSkipError,
     })
   }
+
+const hurry = async (task: Task) => {
+  if (!task.fn) return Promise.resolve()
+
+  if (task.timeout !== 0) {
+    const timeoutMs = ~task.timeout ? task.timeout : g.defaultTimeout
+    await Promise.race([
+      task.fn(),
+      new Promise(
+        (_, reject) =>
+          setTimeout(
+            reject,
+            timeoutMs,
+            new Error('Timed out')
+          )
+      ),
+    ])
+  } else {
+    await task.fn()
+  }
+}
 
 const describe = executer(true) as any
 const it = executer() as any
@@ -181,11 +215,12 @@ g.runTests = async (filename: string, { testNamePattern }: TestRunnerOptions) =>
       results.push({ task })
     } else if (task?.isHook) {
       if (!isSkip) {
-        await task.fn?.()
+        await hurry(task)
       }
     } else if (task) {
       if (isSkip) {
         console.debug(task.didSkipError.stack)
+
         results.push({
           task,
           status: 'skipped',
@@ -193,7 +228,7 @@ g.runTests = async (filename: string, { testNamePattern }: TestRunnerOptions) =>
       } else {
         try {
           stack.push({ task, schedule: [] })
-          await task.fn()
+          await hurry(task)
           stack.pop()
 
           console.warn(task.didNotError.stack)
@@ -213,10 +248,13 @@ g.runTests = async (filename: string, { testNamePattern }: TestRunnerOptions) =>
 
           if (g.getStackCodeFrame) {
             const matcherResult = (error as any).matcherResult
-            const codeFrame = await g.getStackCodeFrame(
-              matcherResult?.message?.split('\n')[0]?.split('// ').pop() ?? message,
-              error.stack!
-            )
+            const codeFrame = await Promise.race([
+              g.getStackCodeFrame(
+                matcherResult?.message?.split('\n')[0]?.split('// ').pop() ?? message,
+                error.stack?.toString?.()
+              ),
+              new Promise<string>(resolve => setTimeout(resolve, 1000, '')),
+            ])
             if (codeFrame) console.error('\n' + codeFrame)
           }
 

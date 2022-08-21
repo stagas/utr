@@ -1,25 +1,27 @@
 import chalk from '@stagas/chalk'
+import { Deferred } from 'everyday-utils'
 import * as path from 'path'
-import { puppito, PuppitoOptions } from 'puppito'
+import { FS_PREFIX, puppito, PuppitoOptions } from 'puppito'
 
 import { Options } from './cli'
 import {
-  consoleFilter,
   filterFilesWithSnapshots,
   getStackCodeFrame,
   log,
   testBegin,
   testEnd,
   testReport,
+  transformArgs,
   updateSnapshots,
   waitForAction,
+  waitForActionDeferred,
 } from './core'
 
 import type { TestResult } from './runner'
 
 declare const window: { resultsPromise: Promise<TestResult[]> }
 
-export const run = async (runOptions: Options) => {
+export async function run(runOptions: Options) {
   const root = process.cwd()
   const { resolve: importMetaResolve } = await eval('import(\'import-meta-resolve\')')
   const resolve = async (x: string) =>
@@ -28,15 +30,19 @@ export const run = async (runOptions: Options) => {
       'file://'
     ).pop()
 
-  const options = new PuppitoOptions()
+  const options = new PuppitoOptions({
+    file: __filename,
+    alias: {
+      runner: await resolve('./runner.js'),
+      expect: await resolve('@storybook/expect'),
+      globals: await resolve('jest-browser-globals'),
+      'everyday-utils': await resolve('everyday-utils'),
+      snapshot: await resolve('./snapshot.js'),
+    },
+  })
 
-  options.alias = {
-    runner: await resolve('./runner.js'),
-    expect: await resolve('@storybook/expect'),
-    globals: await resolve('jest-browser-globals'),
-    'everyday-utils': await resolve('everyday-utils'),
-    snapshot: await resolve('./snapshot.js'),
-  }
+  const resolved = runOptions.files.map(x => path.resolve(process.cwd(), x))
+  const files = resolved.map((x, i) => [`/${FS_PREFIX}/${path.relative(options.homedir, x)}`, runOptions.files[i]])
 
   const makeVirtual = async () => `
     import 'runner'
@@ -47,6 +53,19 @@ export const run = async (runOptions: Options) => {
 
     window.expect = expect
 
+    const g = window
+    if (g.jest) {
+      g.jest.setTimeout = (ms) => {
+        g.defaultTimeout = ms
+      }
+    } else {
+      g.jest = {
+        setTimeout(ms) {
+          g.defaultTimeout = ms
+        },
+      }
+    }
+
     expect.extend(${runOptions.updateSnapshots ? 'snapshotMatcherUpdater' : 'snapshotMatcher'})
 
     window.resultsPromise = new Promise(resolve => {
@@ -55,13 +74,23 @@ export const run = async (runOptions: Options) => {
           filename => fetch(filename).then(res => res.text()))
 
         const testResults = await asyncSerialReduce(${
-    JSON.stringify(runOptions.files)
-  }, async (allResults, filename) => {
-          await import(/* ignore */ '/@fs${root}/' + filename)
+    JSON.stringify(files)
+  }, async (allResults, [filename, relative]) => {
+          try {
+            await import(/* ignore */ filename)
+          } catch (error) {
+            it(filename, () => {
+              throw error
+            })
+          }
 
-          const testResults = await window.runTests(filename, {
-            testNamePattern: ${JSON.stringify(runOptions.testNamePattern)},
-          })
+          let testResults = []
+
+          try {
+            testResults = await window.runTests(relative, {
+              testNamePattern: ${JSON.stringify(runOptions.testNamePattern)},
+            })
+          } catch {}
 
           return allResults.concat(testResults)
         }, [])
@@ -69,12 +98,18 @@ export const run = async (runOptions: Options) => {
         resolve(testResults)
       })();
     })
+
+    window.runnerReady()
   `
 
-  options.file = '/entry.js'
   options.entrySource = await makeVirtual()
-  options.consoleFilter = consoleFilter
-  options.quiet = true
+  options.transformArgs = transformArgs
+  options.extraAnalyzePaths = runOptions.files
+  options.failedRequestFilter = x => {
+    return !x.includes('/onreload')
+  }
+  options.quiet = true //false
+  options.headless = runOptions.headless
 
   if (runOptions.debug) {
     console.error(chalk.yellow.bold('[[[ debugging active @ port 9222 ]]]'))
@@ -84,27 +119,40 @@ export const run = async (runOptions: Options) => {
   const instance = await puppito(options)
   const { server, page, flush, close } = instance
 
-  for (const file of runOptions.files) {
-    const target = path.join(root, file)
-    await server.analyze(target)
-  }
-  server.updateCache()
-
+  let runnerReady = Deferred<void>()
   page.exposeFunction('getStackCodeFrame', getStackCodeFrame)
-
-  page.on('framenavigated', () => {
-    testBegin('bro')
-    if (runOptions.coverage) page.coverage.startJSCoverage()
-  })
-
+  page.exposeFunction('runnerReady', () => runnerReady.resolve())
   page.goto(server.url)
+
+  let errors = 0
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    await page.waitForNavigation({
-      waitUntil: 'domcontentloaded',
-      timeout: runOptions.watch || runOptions.debug ? 0 : 30 * 1000,
+    page.once('framenavigated', () => {
+      waitForActionDeferred?.reject(new Error('Interrupted because frame navigated.'))
+
+      testBegin('bro')
+
+      if (runOptions.coverage)
+        page.coverage.startJSCoverage()
     })
+
+    try {
+      await page.waitForNavigation({
+        waitUntil: 'domcontentloaded',
+        timeout: runOptions.watch || runOptions.debug ? 0 : 30 * 1000,
+      })
+    } catch {
+      break
+    }
+
+    try {
+      await runnerReady.promise
+    } catch {
+      break
+    }
+
+    runnerReady = Deferred()
 
     const testResults = await page.evaluate(async () => {
       return await window.resultsPromise
@@ -114,6 +162,9 @@ export const run = async (runOptions: Options) => {
 
     const { hasErrors, shouldUpdateSnapshots } = testReport(testResults)
 
+    errors = +hasErrors
+
+    if (runOptions.watch) console.error(chalk.blue('\n[url]'), chalk.whiteBright(server.url))
     testEnd('bro', hasErrors)
 
     if (runOptions.coverage) {
@@ -136,13 +187,16 @@ export const run = async (runOptions: Options) => {
     if (runOptions.watch) {
       waitForAction('bro', { watchFiles: false, shouldUpdateSnapshots }, runOptions, async newOptions => {
         Object.assign(options, newOptions)
-        await server.analyze(options.file, await makeVirtual())
-        server.updateCache('/', true)
-      })
+        server.esbuild!.options.entrySource = await makeVirtual()
+        server.esbuild!.onchange!(new Set(resolved))
+        server.esbuild!.rebuild()
+      }, close)
     } else if (!runOptions.debug) {
       await close()
-      process.exit(+hasErrors)
-      break
+      return +hasErrors
     }
   }
+
+  await close()
+  return errors
 }

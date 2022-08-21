@@ -1,11 +1,12 @@
 import chalk from '@stagas/chalk'
-import { getCodeFrame, parseUrls } from 'apply-sourcemaps'
+import { applySourceMaps, clearAllCaches, getCodeFrame, parseUrls } from 'apply-sourcemaps'
 import Debug from 'debug'
 import { queue } from 'event-toolkit'
 import { exists } from 'everyday-node'
 import { asyncFilter, getStringLength, includesAny } from 'everyday-utils'
 import * as fs from 'fs/promises'
 import { diffStringsUnified } from 'jest-diff'
+import * as os from 'os'
 import * as path from 'path'
 
 import { Options } from './cli'
@@ -13,12 +14,14 @@ import { TestResult } from './runner'
 import { filenameToSnap } from './snapshot'
 
 import type { FSWatcher } from 'fs'
+import { FS_PREFIX } from 'puppito'
 
 export const log = Debug('utr')
 
 let now = 0
 
-export const testBegin = (appName: string) => {
+export function testBegin(appName: string) {
+  clearAllCaches()
   const cols = process.stdout.columns
   console.error(chalk.blue(`\n[${appName}] test begin `.padEnd(cols + 1, '─')))
   const time = new Date().toLocaleTimeString()
@@ -26,7 +29,7 @@ export const testBegin = (appName: string) => {
   now = performance.now()
 }
 
-export const testEnd = (appName: string, hasErrors: boolean) => {
+export function testEnd(appName: string, hasErrors: boolean) {
   const cols = process.stdout.columns
   console.error('\n' + chalk[hasErrors ? 'red' : 'green']('─'.repeat(cols)))
   console.error(chalk.blue(`\x1B[1A[${appName}] test end : ${(performance.now() - now).toFixed(2)}ms `))
@@ -34,7 +37,7 @@ export const testEnd = (appName: string, hasErrors: boolean) => {
   console.error(chalk.blue(`\x1B[1A\x1B[${cols - time.length - 1}C ${time}`))
 }
 
-export const testReport = (results: TestResult[]) => {
+export function testReport(results: TestResult[]) {
   const cols = process.stdout.columns
   const hasErrors = results.some(x => x.status === 'failed')
   const shouldUpdateSnapshots = results.some(x => x.error?.message.includes('snapshot'))
@@ -65,27 +68,28 @@ export const testReport = (results: TestResult[]) => {
       '  '.repeat(x.task!.namespace.length) + (
         // dprint-ignore
         chalk[x.task!.isGroup ? 'reset' : 'grey'](
-          (x.status === 'passed' ? chalk.green('✓ ') :
+        (x.status === 'passed' ? chalk.green('✓ ') :
           x.status === 'failed' ? chalk.red('✕ ') :
-          x.status === 'skipped' ? chalk.yellow('○ ') : '')
-          + x.task!.ownName
-        )
+            x.status === 'skipped' ? chalk.yellow('○ ') : '')
+        + x.task!.ownName
+      )
       )
     ).join('\n')
   )
   return { hasErrors, shouldUpdateSnapshots }
 }
 
-export const getStackCodeFrame = async (message: string, stack: string) => {
+export async function getStackCodeFrame(message: string, stack?: string) {
   // only our own stack trace identified by identation level for 'at'
-  stack = stack.split('\n').filter(x => x.startsWith('    at') && !x.includes('.snap')).join('\n')
+  stack = stack?.split('\n').filter(x => x.startsWith('    at') && !x.includes('.snap')).join('\n')
+  if (!stack?.trim().length) return ''
   const urls = parseUrls(stack)
   const codeFrame = await getCodeFrame(message, urls[0])
   return clip(indent(codeFrame ?? '', 4))
 }
 
-const clip = (x: string, length = process.stdout.columns) =>
-  x.split('\n').map(x => {
+function clip(x: string, length = process.stdout.columns) {
+  return x.split('\n').map(x => {
     let out = ''
     let count = 0
     main:
@@ -97,7 +101,8 @@ const clip = (x: string, length = process.stdout.columns) =>
             out += x[i++]
             for (; i < x.length; i++) {
               out += x[i]
-              if (x[i] === 'm') continue main
+              if (x[i] === 'm')
+                continue main
             }
           }
         }
@@ -111,11 +116,14 @@ const clip = (x: string, length = process.stdout.columns) =>
     }
     return out
   }).join('\n')
+}
 
-const indent = (x: string, amount = 0) => x.split('\n').map(x => ' '.repeat(amount) + x).join('\n')
+function indent(x: string, amount = 0) {
+  return x.split('\n').map(x => ' '.repeat(amount) + x).join('\n')
+}
 
-export const consoleFilter = (args: any[]) =>
-  args.map(x => {
+export function transformArgsSync(args: any[], originUrl?: string) {
+  return args.map(x => {
     if (typeof x === 'string') {
       const didError = x.includes('DidError')
       const didNotError = x.includes('DidNotError')
@@ -141,57 +149,86 @@ export const consoleFilter = (args: any[]) =>
         .filter(x =>
           !includesAny(x, [
             'entry',
+            'bundle',
             'runTest',
             'pptr:',
             'node:',
             'asyncSerialReduce',
+            '/utr/',
             '/register',
             '/runner',
-            '/expect/',
+            '/expect',
           ])
         )
         .join('\n')
-        .replaceAll('?import', '')
 
       const urls = parseUrls(cleanStack)
-      for (const url of urls) {
-        let target = url.url
-        if (target.startsWith('/')) {
+      for (const [i, url] of urls.entries()) {
+        let target = originUrl ? url.url.replace(originUrl, '') : url.url
+
+        if (!target.startsWith('/')) {
+          target = path.relative(process.cwd(), path.join(process.cwd(), target))
+        } else {
           target = path.relative(process.cwd(), target)
         }
 
         cleanStack = cleanStack.replaceAll(
           url.originalUrl,
           [
-            '\x1B[0m' + target + '\x1B[39m',
+            i > 0 || didError ? '\x1B[0m' + target + '\x1B[39m' : target,
             url.line,
             url.column,
           ].join(':')
         )
       }
 
-      cleanStack = cleanStack.split('\n')
-        .map(x => x.startsWith('    at') ? chalk.grey(x.slice(2)) : x)
-        .join('\n')
+      const lines = cleanStack
+        .split('\n')
+        .filter(x => x.trim().length)
+
+      const [firstUrl] = parseUrls(lines[0]!)
+      if (firstUrl) lines.shift()
+
+      cleanStack = indent(
+        lines
+          .map(x => x.startsWith('    at') ? chalk.grey(x.slice(2)) : x)
+          .join('\n'),
+        4
+      )
 
       const color = didError ? 'red' : didSkipError ? 'yellow' : 'green'
 
-      return ['\n' + chalk[color](message), indent(cleanStack, 4)].join('\n\n')
-    } else return x
+      return [
+        chalk[color](message) + '  ' + chalk.grey(firstUrl?.originalUrl ?? ''),
+        ...(cleanStack.trim().length ? [cleanStack] : []),
+      ]
+        .join('\n')
+    } else
+      return x
   })
+}
+
+export async function transformArgs(args: any[], originUrl?: string) {
+  for (const [i, arg] of args.entries()) {
+    if (typeof arg !== 'string') continue
+    args[i] = await applySourceMaps(arg, url => {
+      return path.relative(process.cwd(), url.replace(`/${FS_PREFIX}/`, os.homedir() + '/'))
+    })
+  }
+  return transformArgsSync(args, originUrl)
+}
 
 const watchers: FSWatcher[] = []
-let offKeypress: (() => void) | undefined
+export let waitForActionDeferred: any
 
-export const waitForAction = async (
+export async function waitForAction(
   appName: string,
   { watchFiles, shouldUpdateSnapshots }: { watchFiles: boolean; shouldUpdateSnapshots: boolean },
   options: Options,
   cb: (newOptions?: Partial<Options>) => void,
-) => {
-  offKeypress?.()
-
-  const { keypress } = await import('everyday-node')
+  cleanup: () => Promise<void>,
+) {
+  const { singleKeypress } = await import('everyday-node')
 
   if (watchFiles) {
     const { watch } = await import('fs')
@@ -199,6 +236,7 @@ export const waitForAction = async (
 
     const rerun = queue.debounce(100).last(() => {
       console.log(chalk.blue(`[${appName}] change detected - running tests again...`))
+      waitForActionDeferred?.reject(new Error('Interrupted because file(s) changed.'))
       cb()
     })
 
@@ -210,39 +248,46 @@ export const waitForAction = async (
 
   console.log(chalk.blue(`[${appName}] watching for changes...`))
 
-  offKeypress = await keypress(
+  waitForActionDeferred = await singleKeypress(
     chalk.blue(`[${appName}]`)
       + ` [r]un${options.testNamePattern ? ' [a]ll' : ''} [q]uit${
         shouldUpdateSnapshots ? chalk.bold.yellowBright(' [u]pdate snaphots') : ''
-      }: `,
-    (char, key) => {
-      if ((key.name === 'c' && key.ctrl) || char === 'q') {
-        console.log(chalk.bold('quit'))
-        process.exit()
-      } else if (char === 'r') {
-        console.log(chalk.bold('run'))
-        cb()
-      } else if (char === 'u') {
-        console.log(chalk.bold('update snapshots'))
-        cb({ updateSnapshots: true })
-      } else if (char === 'a') {
-        console.log(chalk.bold('run all'))
-        cb({ testNamePattern: '' })
-      }
-    }
+      }: `
   )
+
+  try {
+    const { char, key } = await waitForActionDeferred.promise
+
+    if ((key.name === 'c' && key.ctrl) || char === 'q') {
+      console.log(chalk.bold('quit'))
+      cleanup()
+      process.exit()
+    } else if (char === 'r') {
+      console.log(chalk.bold('run'))
+      cb()
+    } else if (char === 'u') {
+      console.log(chalk.bold('update snapshots'))
+      cb({ updateSnapshots: true })
+    } else if (char === 'a') {
+      console.log(chalk.bold('run all'))
+      cb({ testNamePattern: '' })
+    }
+  } catch {}
 }
 
-const toBacktickString = (x: string) =>
-  '`' + JSON.stringify(x).slice(1, -1).replaceAll('`', '\\`').replaceAll('\\"', '"').replaceAll('\\n', '\n')
-  + '`'
+function toBacktickString(x: string) {
+  return '`' + JSON.stringify(x).slice(1, -1).replaceAll('`', '\\`').replaceAll('\\"', '"').replaceAll('\\n', '\n')
+    + '`'
+}
 
-export const updateSnapshots = async (appName: string, testResults: TestResult[]) => {
+export async function updateSnapshots(appName: string, testResults: TestResult[]) {
   const output: Record<string, string> = {}
 
   for (const x of testResults) {
     if (!x.task?.snapshots) continue
+
     const snapshots = x.task.snapshots
+
     for (const [i, s] of snapshots.entries()) {
       const name = [...x.task.namespace, i + 1].join(' ')
       output[x.task.filename] ??= ''
@@ -259,5 +304,6 @@ export const updateSnapshots = async (appName: string, testResults: TestResult[]
   console.log(chalk.blue(`[${appName}]`), chalk.bold.green('updated snapshots'))
 }
 
-export const filterFilesWithSnapshots = (files: string[]) =>
-  asyncFilter(files, filename => exists(filenameToSnap(filename)))
+export function filterFilesWithSnapshots(files: string[]) {
+  return asyncFilter(files, filename => exists(filenameToSnap(filename)))
+}

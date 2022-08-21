@@ -14,25 +14,25 @@ import { decarg } from 'decarg'
 import { asyncSerialReduce } from 'everyday-utils'
 import * as fs from 'fs/promises'
 import * as path from 'path'
+
 import { Options } from './cli'
 import {
-  consoleFilter,
   filterFilesWithSnapshots,
   getStackCodeFrame,
   testBegin,
   testEnd,
   testReport,
+  transformArgsSync,
   updateSnapshots,
 } from './core'
 import { fetchSnapshots, snapshotMatcher, snapshotMatcherUpdater } from './snapshot'
 
 import type { TestResult } from './runner'
 
-// patch console to apply stack traces
 for (const m of ['debug', 'error', 'warn']) {
   const orig = (console as any)[m]
   ;(console as any)[m] = (...args: any[]) => {
-    return orig.apply(console, consoleFilter(args))
+    return orig.apply(console, transformArgsSync(args))
   }
 }
 
@@ -67,4 +67,6 @@ queueMicrotask(async () => {
   testEnd('no', hasErrors)
 
   if (options.updateSnapshots) await updateSnapshots('no', testResults)
+
+  process.exit(process.exitCode)
 })
