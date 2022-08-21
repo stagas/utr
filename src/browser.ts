@@ -1,5 +1,6 @@
 import chalk from '@stagas/chalk'
 import { Deferred } from 'everyday-utils'
+import * as fs from 'fs'
 import * as path from 'path'
 import { FS_PREFIX, puppito, PuppitoOptions } from 'puppito'
 
@@ -31,7 +32,7 @@ export async function run(runOptions: Options) {
     ).pop()
 
   const options = new PuppitoOptions({
-    file: __filename,
+    file: fs.realpathSync(__filename),
     alias: {
       runner: await resolve('./runner.js'),
       expect: await resolve('@storybook/expect'),
