@@ -32,7 +32,11 @@ export const discoverFiles = async (options: Options) => {
 
   for (const file of options.files) {
     const contents = await fs.promises.readFile(path.resolve(process.cwd(), file), 'utf-8')
-    parseEnvs(contents).forEach(env => {
+
+    let envs = parseEnvs(contents)
+    if (!envs.length) envs = (['node', 'jsdom', 'browser'] as const).filter(x => options[x])
+
+    envs.forEach(env => {
       options.envs ??= {}
       options.envs[env] ??= []
       options.envs[env].push(file)
