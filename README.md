@@ -1,5 +1,7 @@
+
+
 <h1>
-utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v1.3.3-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-2,708-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+utr <a href="https://npmjs.org/package/utr"><img src="https://img.shields.io/badge/npm-v1.3.4-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-2,770-FFF.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
@@ -23,10 +25,12 @@ Universal test runner.
 <img width="731.4285714285713" src="cli.png" />
 </p>
 
+
 ## API
 
-## Credits
 
+
+## Credits
 - [@stagas/chalk](https://npmjs.org/package/@stagas/chalk) by [stagas](https://github.com/stagas) &ndash; Terminal string styling done right (+ CommonJS build)
 - [@storybook/expect](https://npmjs.org/package/@storybook/expect) by [storybookjs](https://github.com/storybookjs) &ndash; Browser-compatible version of Jest's `expect`
 - [@swc-node/core](https://npmjs.org/package/@swc-node/core) by [LongYinan](https://github.com/swc-project) &ndash; Faster swc nodejs binding
@@ -40,15 +44,15 @@ Universal test runner.
 - [everyday-node](https://npmjs.org/package/everyday-node) by [stagas](https://github.com/stagas) &ndash; Everyday node utilities.
 - [everyday-types](https://npmjs.org/package/everyday-types) by [stagas](https://github.com/stagas) &ndash; Everyday utility types
 - [everyday-utils](https://npmjs.org/package/everyday-utils) by [stagas](https://github.com/stagas) &ndash; Everyday utilities
-- [expect](https://npmjs.org/package/expect) by [facebook](https://github.com/facebook)
+- [expect](https://npmjs.org/package/expect) by [facebook](https://github.com/facebook) 
 - [glob](https://npmjs.org/package/glob) by [Isaac Z. Schlueter](http://blog.izs.me/) &ndash; a little globber
 - [global-jsdom](https://npmjs.org/package/global-jsdom) by [jonathan schatz](https://github.com/github.com) &ndash; Enable DOM in Node.js
 - [import-meta-resolve](https://npmjs.org/package/import-meta-resolve) by [Titus Wormer](https://wooorm.com) &ndash; Resolve things like Node.js — ponyfill for `import.meta.resolve`
 - [istanbul-lib-coverage](https://npmjs.org/package/istanbul-lib-coverage) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; Data library for istanbul coverage objects
 - [istanbul-lib-report](https://npmjs.org/package/istanbul-lib-report) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; Base reporting library for istanbul
 - [istanbul-reports](https://npmjs.org/package/istanbul-reports) by [Krishnan Anantheswaran](https://github.com/istanbuljs) &ndash; istanbul reports
-- [jest-browser-globals](https://npmjs.org/package/jest-browser-globals) by [arshaw](https://github.com/arshaw)
-- [jest-diff](https://npmjs.org/package/jest-diff) by [facebook](https://github.com/facebook)
+- [jest-browser-globals](https://npmjs.org/package/jest-browser-globals) by [arshaw](https://github.com/arshaw) 
+- [jest-diff](https://npmjs.org/package/jest-diff) by [facebook](https://github.com/facebook) 
 - [jsdom](https://npmjs.org/package/jsdom) by [jsdom](https://github.com/jsdom) &ndash; A JavaScript implementation of many web standards
 - [pirates](https://npmjs.org/package/pirates) by [Ari Porad](http://ariporad.com) &ndash; Properly hijack require
 - [puppito](https://npmjs.org/package/puppito) by [stagas](https://github.com/stagas) &ndash; Start devito along with a puppeteer connection to it.
