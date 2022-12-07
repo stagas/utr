@@ -54,7 +54,9 @@ export const main = async (options: Options) => {
     return run(options)
   }
 
-  const cmd = options.coverage ? ['c8', 'node'] : ['node']
+  const cmd = options.coverage
+    ? ['c8', 'node']
+    : ['node']
 
   if (options.runInBand) {
     require(swc)
@@ -73,13 +75,23 @@ export const main = async (options: Options) => {
       Object.assign(options, newOptions)
     }
 
-    const { sync: spawnSync } = await import('cross-spawn')
+    const { sync: spawnSync, spawn } = await import('cross-spawn')
 
     const status = spawnSync(
       cmd[0],
-      [...cmd.slice(1), '-r', swc, ...(options.jsdom ? ['-r', jsdom] : []), patch, ...options.files],
+      [
+        ...cmd.slice(1),
+        '-r', swc,
+        ...(options.jsdom ? ['-r', jsdom] : []),
+        patch,
+        ...options.files,
+        ...(options.testNamePattern ? ['-t', options.testNamePattern] : [])],
       { stdio: 'inherit' }
     ).status!
+
+    if (options.coverage) {
+      spawn('c8', ['report', '--reporter', 'lcovonly'])
+    }
 
     if (options.watch) {
       // remove --update-snapshots for the next runs

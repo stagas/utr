@@ -2,7 +2,7 @@ import chalk from '@stagas/chalk'
 import { Deferred } from 'everyday-utils'
 import * as fs from 'fs'
 import * as path from 'path'
-import { FS_PREFIX, puppito, PuppitoOptions } from 'puppito'
+import { clearDevitoCaches, FS_PREFIX, puppito, PuppitoOptions } from 'puppito'
 
 import { Options } from './cli'
 import {
@@ -45,7 +45,7 @@ export async function run(runOptions: Options) {
   const resolved = runOptions.files.map(x => path.resolve(process.cwd(), x))
   const files = resolved.map((x, i) => [`/${FS_PREFIX}/${path.relative(options.homedir, x)}`, runOptions.files[i]])
 
-  const makeVirtual = async () => `
+  const makeVirtual = async (runOptions: Options) => `
     import 'runner'
     import 'globals'
     import expect from 'expect'
@@ -103,7 +103,7 @@ export async function run(runOptions: Options) {
     window.runnerReady()
   `
 
-  options.entrySource = await makeVirtual()
+  options.entrySource = await makeVirtual(runOptions)
   options.transformArgs = transformArgs
   options.extraAnalyzePaths = runOptions.files
   options.failedRequestFilter = x => {
@@ -181,14 +181,19 @@ export async function run(runOptions: Options) {
     }
 
     if (runOptions.updateSnapshots) {
-      await updateSnapshots('bro', testResults)
+      await updateSnapshots('bro', testResults, runOptions)
       runOptions.updateSnapshots = false
     }
 
     if (runOptions.watch) {
       waitForAction('bro', { watchFiles: false, shouldUpdateSnapshots }, runOptions, async newOptions => {
-        Object.assign(options, newOptions)
-        server.esbuild!.options.entrySource = await makeVirtual()
+        Object.assign(runOptions, newOptions)
+
+        // TODO: only clear the entrySource + Set(resolved)
+        // for now we clear all because it's not updating correctly
+        clearDevitoCaches()
+
+        server.esbuild!.options.entrySource = await makeVirtual(runOptions)
         server.esbuild!.onchange!(new Set(resolved))
         server.esbuild!.rebuild()
       }, close)

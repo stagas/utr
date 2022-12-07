@@ -43,17 +43,17 @@ export function testReport(results: TestResult[]) {
   const shouldUpdateSnapshots = results.some(x => x.error?.message.includes('snapshot'))
 
   // results:
-  console.log(chalk[hasErrors ? 'red' : 'green']('\n'.padEnd(cols + 1, '─')))
   const total = chalk.bold.grey(
-    `${
-      [
-        chalk.green(results.filter(x => x.status === 'passed').length || '-'),
-        chalk.red(results.filter(x => x.status === 'failed').length || '-'),
-        chalk.yellow(results.filter(x => x.status === 'skipped').length || '-'),
-      ].join(' : ')
+    `${[
+      chalk.green(results.filter(x => x.status === 'passed').length || '-'),
+      chalk.red(results.filter(x => x.status === 'failed').length || '-'),
+      chalk.yellow(results.filter(x => x.status === 'skipped').length || '-'),
+    ].join(' : ')
     } / ${chalk.white(results.filter(x => !x.task!.isGroup).length)}`
   )
+  console.log(chalk[hasErrors ? 'red' : 'green']('\n'.padEnd(cols + 1, '─')))
   console.log(`\x1B[1A\x1B[${cols - getStringLength(total) - 1}C ${total}\n`)
+
   console.log(
     results.filter(x => {
       if (
@@ -68,14 +68,18 @@ export function testReport(results: TestResult[]) {
       '  '.repeat(x.task!.namespace.length) + (
         // dprint-ignore
         chalk[x.task!.isGroup ? 'reset' : 'grey'](
-        (x.status === 'passed' ? chalk.green('✓ ') :
-          x.status === 'failed' ? chalk.red('✕ ') :
-            x.status === 'skipped' ? chalk.yellow('○ ') : '')
-        + x.task!.ownName
-      )
+          (x.status === 'passed' ? chalk.green('✓ ') :
+            x.status === 'failed' ? chalk.red('✕ ') :
+              x.status === 'skipped' ? chalk.yellow('○ ') : '')
+          + x.task!.ownName
+        )
       )
     ).join('\n')
   )
+
+  console.log(chalk[hasErrors ? 'red' : 'green']('\n'.padEnd(cols + 1, '─')))
+  console.log(`\x1B[1A\x1B[${cols - getStringLength(total) - 1}C ${total}\n`)
+
   return { hasErrors, shouldUpdateSnapshots }
 }
 
@@ -133,14 +137,36 @@ export function transformArgsSync(args: any[], originUrl?: string) {
         return x
       }
 
+      // console.log(x)
       const parts = x.split('\n\n')
       const [, message] = parts
       let [, , ...stack] = parts
 
       if (x.includes('Error: Snapshots')) {
-        const [, , , actual, , expected] = stack
+        // console.log(stack)
+        let actual = ''
+        let expected = ''
+        let rest: string[] = []
+        out:
+        for (let i = 0; i < stack.length; i++) {
+          if (stack[i] === 'Actual:') {
+            for (i++; i < stack.length; i++) {
+              if (stack[i] === 'Expected:') {
+                for (i++; i < stack.length; i++) {
+                  if (stack[i].startsWith('    at')) {
+                    rest = stack.slice(i)
+                    break out
+                  }
+                  expected += stack[i] + '\n'
+                }
+              }
+              actual += stack[i] + '\n'
+            }
+          }
+        }
+        // const [, , , actual, , expected] = stack
         const difference = indent(diffStringsUnified(expected.trim(), actual.trim()), 2)
-        stack = [...stack.slice(0, 2), difference, ...stack.slice(6)]
+        stack = [...stack.slice(0, 2), difference, ...rest]
       }
 
       let cleanStack = stack
@@ -162,6 +188,7 @@ export function transformArgsSync(args: any[], originUrl?: string) {
         )
         .join('\n')
 
+      // console.log(stack)
       const urls = parseUrls(cleanStack)
       for (const [i, url] of urls.entries()) {
         let target = originUrl ? url.url.replace(originUrl, '') : url.url
@@ -186,8 +213,11 @@ export function transformArgsSync(args: any[], originUrl?: string) {
         .split('\n')
         .filter(x => x.trim().length)
 
+      // console.log(lines)
       const [firstUrl] = parseUrls(lines[0]!)
-      if (firstUrl) lines.shift()
+      if (didNotError) {
+        if (firstUrl) lines.shift()
+      }
 
       cleanStack = indent(
         lines
@@ -241,8 +271,13 @@ export async function waitForAction(
     })
 
     watchers.splice(0).forEach(x => x.close())
-    for await (const dep of eachDep(options.files[0])) {
-      watchers.push(watch(dep, rerun))
+    const watched = new Set<string>()
+    for (const file of options.files) {
+      for await (const dep of eachDep(file)) {
+        if (watched.has(dep)) continue
+        watched.add(dep)
+        watchers.push(watch(dep, rerun))
+      }
     }
   }
 
@@ -250,9 +285,8 @@ export async function waitForAction(
 
   waitForActionDeferred = await singleKeypress(
     chalk.blue(`[${appName}]`)
-      + ` [r]un${options.testNamePattern ? ' [a]ll' : ''} [q]uit${
-        shouldUpdateSnapshots ? chalk.bold.yellowBright(' [u]pdate snaphots') : ''
-      }: `
+    + ` [r]un${options.testNamePattern ? ' [a]ll' : ''} [q]uit${shouldUpdateSnapshots ? chalk.bold.yellowBright(' [u]pdate snaphots') : ''
+    }: `
   )
 
   try {
@@ -272,7 +306,7 @@ export async function waitForAction(
       console.log(chalk.bold('run all'))
       cb({ testNamePattern: '' })
     }
-  } catch {}
+  } catch { }
 }
 
 function toBacktickString(x: string) {
@@ -280,7 +314,7 @@ function toBacktickString(x: string) {
     + '`'
 }
 
-export async function updateSnapshots(appName: string, testResults: TestResult[]) {
+export async function updateSnapshots(appName: string, testResults: TestResult[], options: Options) {
   const output: Record<string, string> = {}
 
   for (const x of testResults) {
@@ -298,7 +332,14 @@ export async function updateSnapshots(appName: string, testResults: TestResult[]
   for (const [filename, snap] of Object.entries(output)) {
     const snapFilename = filenameToSnap(filename)
     await fs.mkdir(path.dirname(snapFilename), { recursive: true })
-    await fs.writeFile(snapFilename, snap, 'utf-8')
+    if (options.testNamePattern) {
+      // TODO: this works because the last exports take precedence,
+      // but the file will grow until tests without testNamePattern run again.
+      // shouldn't be a problem though. lets see.
+      await fs.appendFile(snapFilename, snap, 'utf-8')
+    } else {
+      await fs.writeFile(snapFilename, snap, 'utf-8')
+    }
   }
 
   console.log(chalk.blue(`[${appName}]`), chalk.bold.green('updated snapshots'))

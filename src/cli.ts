@@ -41,10 +41,10 @@ if (require.main === module) {
     options.node =
       options.jsdom =
       options.browser =
-        true
+      true
   }
 
-  ;(async () => {
+  ; (async () => {
     await discoverFiles(options)
 
     const results: Record<string, number | void> = {}
@@ -99,6 +99,8 @@ if (require.main === module) {
         .join('   ')
     )
 
-    process.exit((options.passAll && errors) || !didPassOne ? 1 : 0)
+    if (!options.watch) {
+      process.exit((options.passAll && errors) || !didPassOne ? 1 : 0)
+    }
   })()
 }

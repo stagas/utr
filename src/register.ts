@@ -10,6 +10,26 @@ if (typeof window !== 'undefined') {
   global.EventTarget = window.EventTarget
 }
 
+// @ts-ignore
+jest.fn = (fn?: (...args: any[]) => any) => {
+  const calls = [] as any[]
+  return Object.assign(function (this: any, ...args: any[]) {
+    calls.push(args)
+    return fn?.apply(this, args)
+  }, {
+    _isMockFunction: true,
+    getMockName() {
+      return 'fn'
+    },
+    mock: {
+      calls,
+      get lastCall() {
+        return calls.at(-1)
+      },
+    }
+  })
+}
+
 import { decarg } from 'decarg'
 import { asyncSerialReduce } from 'everyday-utils'
 import * as fs from 'fs/promises'
@@ -31,9 +51,9 @@ import type { TestResult } from './runner'
 
 for (const m of ['debug', 'error', 'warn']) {
   const orig = (console as any)[m]
-  ;(console as any)[m] = (...args: any[]) => {
-    return orig.apply(console, transformArgsSync(args))
-  }
+    ; (console as any)[m] = (...args: any[]) => {
+      return orig.apply(console, transformArgsSync(args))
+    }
 }
 
 global.getStackCodeFrame = getStackCodeFrame
@@ -66,7 +86,7 @@ queueMicrotask(async () => {
 
   testEnd('no', hasErrors)
 
-  if (options.updateSnapshots) await updateSnapshots('no', testResults)
+  if (options.updateSnapshots) await updateSnapshots('no', testResults, options)
 
   process.exit(process.exitCode)
 })
